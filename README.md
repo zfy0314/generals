@@ -54,3 +54,10 @@ Dos and Don'ts
 ***DO NOTs***
 1. merge to master branch
 2. edit other players
+
+Target
+-----
+v0.0.0: recreate basic general rules; visualize output
+v0.1.0: single-player
+...
+v1.0.0: player implementation
