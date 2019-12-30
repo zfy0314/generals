@@ -11,6 +11,8 @@ Directory Tree
 | |
 | |--game.py # recreate generals
 | |
+| |--utils.py # some helper class/func
+| |
 | |--vis.py # visualize 
 |
 |--players/ # where different algorithms are stored
@@ -57,7 +59,7 @@ Dos and Don'ts
 
 Target
 -----
-v0.0.0: recreate basic general rules; visualize output
-v0.1.0: single-player
-...
-v1.0.0: player implementation
+* v0.0.0: recreate basic general rules; visualize output
+* v0.1.0: single-player
+* ...
+* v1.0.0: player implementation
