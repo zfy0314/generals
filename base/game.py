@@ -1,15 +1,15 @@
 from copy import deepcopy
 import json
-from random import randint, random
+from random import randint, random, shuffle
 import os
 from pprint import pprint
 
-from utils import Timer
+from base.utils import cprint, error_filter, Timer
 
 class Board():
 
     def __init__(self, name, players={}, width=20, height=20, 
-                 mountain_ratio=0.5, city_ratio=0.5):
+                 mountain_ratio=0.5, city_ratio=0.5, human=False):
 
         '''
         Args:
@@ -18,6 +18,7 @@ class Board():
                 every player must have "get_next_move" callable
             mountain_ratio: (double) NUM_MOUNTAIN / NUM_TILES
             city_ratio: (double) NUM_CITY / NUM_TILES
+            human: (bool) enable offline human playing features
         
         Attrs:
             generals: (dict: {name: (x, y)}) coordinates for different general
@@ -31,6 +32,7 @@ class Board():
         self.players = players
         self.width = width
         self.height = height
+        self.size = width * height
         self.mountain_ratio = mountain_ratio
         self.city_ratio = city_ratio
         self.round = 0
@@ -40,6 +42,7 @@ class Board():
         self.lands = {name: set() for name in self.players.keys()}
         self.status = {name: {'army':1, 'land':1} for name in self.players.keys()}
         self.vis = {name: set() for name in self.players.keys()}
+        self.human = human
 
     def __getitem__(self, index):
         
@@ -65,8 +68,8 @@ class Board():
 
         def get_valids(parameters, checked):
             (x, y) = parameters
-            return [parameter for parameter in [(x+1, y), (x-1, y), (x, y+1), (x, y-1)] \
-                        if is_valid(parameter, checked)]
+            return {parameter for parameter in [(x+1, y), (x-1, y), (x, y+1), (x, y-1)] \
+                        if is_valid(parameter, checked)}
 
         if blank == True:
             B = [[Tile() for i in range(self.height)] for j in range(self.width)]
@@ -78,29 +81,39 @@ class Board():
         else:
             # PTAL
             # generate blank tiles, connection guaranteed
-            first = (randint(0, self.width - 1), randint(0, self.height - 1))
+            first = (self.width // 4 + randint(0, self.width // 2), self.height // 4 + randint(0, self.height // 2))
             blanks = {first}
-            candidates = {x for x in get_valids(first, [])}
-            while len(blanks) < self.width * self.height * (1 - self.mountain_ratio):
+            candidates = get_valids(first, [])
+            while len(blanks) + len(self.mountains) < self.size:
                 parameters = candidates.pop()
-                blanks.add(parameters)
-                for parameter in get_valids(parameters, candidates):
-                    candidates.add(parameter)
+                if len(candidates) > 4 and random() < self.mountain_ratio:
+                    self.mountains.add(parameters)
+                else:
+                    blanks.add(parameters)
+                    candidates = candidates.union((get_valids(parameters, blanks.union(self.mountains))))
+                if len(candidates) == 0:
+                    break
+            self.wasted = self.size - len(blanks) - len(self.mountains)
+            if self.wasted / self.size > 0.05:
+                return False
 
             # draw the board
             B = []                             
             for x in range(self.width):
                 B.append([])
                 for y in range(self.height):
-                    B[x].append([])
-                    if (x, y) not in blanks:
-                        self.mountains.add((x, y))
-                        B[x][y] = Tile(is_mountain=1)
-                    else:
-                        B[x][y] = Tile()
+                    B[x].append(Tile())
+
+            # draw mountains
+            for (x, y) in self.mountains:
+                B[x][y].is_mountain = 1
+
+            # shuffle blanks 
+            blanks = list(blanks)
+            shuffle(blanks)
 
             # add cities
-            for i in range(int(self.width * self.height * self.city_ratio)):
+            for i in range(int(len(blanks) * self.city_ratio)):
                 (x, y) = blanks.pop()
                 self.cities.add((x, y))
                 B[x][y].is_city = 1
@@ -111,24 +124,27 @@ class Board():
                 (x, y) = blanks.pop()
                 self.generals[name] = (x, y)
                 B[x][y].is_general = 1
-                self.owner = name
+                B[x][y].owner = name
                 self.lands[name].add((x, y))
                 for c in self.get_surrounded(x, y):
                     self.vis[name].add(c)
                 self.vis[name].add((x, y))
             
             self.board = B
+            return True
 
     def update(self): 
 
         if 0 == self.round:
             # initialization
-            self.generate_board(False)
-            self.moves = {}
+            while not self.generate_board(False):
+                self.mountains = set()
+                pass
+            self.moves = {name: [] for name in self.players.keys()}
         else:
             for name in self.players.keys():
                 move = self.get_next_move(name)
-                self.moves[name] = move
+                self.moves[name].append(move)
                 if move == None: continue
 
                 # update army
@@ -176,9 +192,14 @@ class Board():
 
     def get_next_move(self, player_name):
 
-        board = self.get_board(name)
+        if self.human:
+            print('Round {}'.format(self.round))
+            pprint(self.status)
+            print('\n')
+
+        board = self.get_board(player_name)
         move = self.players[player_name].get_next_move(board)
-        while not is_valid(move, player_name):
+        while not self.is_valid(move, player_name):
             move = self.players[player_name].get_next_move(board)
         return move
 
@@ -229,17 +250,23 @@ class Board():
     def add_city(self):
         
         for (x, y) in self.cities:
-            if B.board[x][y].owner != None:
+            if self.board[x][y].owner != None:
                 self.board[x][y].army += 1
         for name, (x, y) in self.generals.items():
-            self.board[x][y].armg += 1
+            self.board[x][y].army += 1
 
     def view(self):
 
-        for y in range(self.height):
-            for x in range(self.width):
-                print(str(self.board[x][y]), end=' ')
+        for x in range(self.width):
+            for y in range(self.height):
+                cprint(self.board[x][y], end=' ')
             print('\n')
+
+    def info(self):
+
+        info = self.__dict__
+        info['board'] = 'Tiles {} x {}'.format(self.width, self.height)
+        return info
 
     def save(self, output_file):
 
@@ -270,9 +297,10 @@ class Tile():
             use vis.py for visualization;
             use 'print(T.__dict__)' to check details
         '''
-        if self.is_general == 1: return '_G_'
+        if self.is_general == 1: return 'G{}'.format(str(self.army).zfill(2))
         if self.is_city == 1: return 'C{}'.format(str(self.army).zfill(2))
         if self.is_mountain == 1: return 'MMM'
+        if self.is_city == 0.5: return '_U_'
         return str(self.army).zfill(3)
 
     def mask(self):
@@ -312,11 +340,11 @@ class Tile():
 def test_board():
 
     with Timer('step1: initialize') as t:
-        B = Board('test', {'d1': None, 'd2': None}, width=10, height=10, mountain_ratio=0.3, city_ratio=0.1)
+        B = Board('test', {'d{}'.format(i): None for i in range(8)}, width=10, height=10, mountain_ratio=0.3, city_ratio=0.1)
     pprint(B.__dict__)
 
     with Timer('step2: initialize board') as t:
-        B.generate_board(False)
+        error_filter(B.generate_board, False)
     B.view()
     pprint(B.__dict__)
 
@@ -325,5 +353,3 @@ def test_board():
 
     return None
 
-if __name__ == '__main__':
-    test_board()
