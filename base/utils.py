@@ -61,19 +61,35 @@ class Cprinter():
 
 cprint = Cprinter()
 
-def error_filter(func, *args):
+def error_filter(func, *args, **kwargs):
 
     '''
     Usage:
         a wrapper for codes that may trigger errors for no reason
+
+    Args:
+        KIfunc: func to be called when KeyboardInterrupt
+        max_try: max_tries, set to infinite
+        message: message to be printed when catch other exceptions
     '''
+    cnt = 0
     while True:
         try:
             tmp = func(*args)
+        except KeyboardInterrupt:
+            if 'KIfunc' in kwargs.keys():
+                kwargs['KIfunc']()
+            raise KeyboardInterrupt
         except:
-            pass
+            if 'message' in kwargs.keys():
+                print(kwargs['message'])
+            cnt += 1
         else:
             return tmp
+        if 'max_try' in kwargs.keys() and cnt > kwargs['max_try']:
+            print('error_filter: func {} reached {} tries !!!'.format(
+                str(func), cnt))
+            raise KeyboardInterrupt
 
 def clear():
 

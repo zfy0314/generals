@@ -1,8 +1,20 @@
 # A platform to test/build [generals](generals.io) playing algorithm
 
-V0.0.0_release:
+V0.0.0 release:
 -----
-Main Feature: offline cli generals for up to 8 players
+![demo](screenshot.png)
+* **Main Feature**: offline cli generals for up to 8 players
+
+How to play:
+-----
+1. set map as prompted (default set to 2 players; 15*15; mountain ratio 0.3; city ratio 0.1)
+2. type (x, y) w/a/s/d/w1/a1/s1/d1 to control the army
+    * x, y: initial coordinates
+    * *1: move half of the army
+    * add 'Q' to the front to quit all queued moves
+
+------------
+for developers:
 
 Directory Tree
 -----

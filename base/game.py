@@ -4,7 +4,7 @@ from random import randint, random, shuffle
 import os
 from pprint import pprint
 
-from base.utils import cprint, error_filter, Timer
+from base.utils import clear, cprint, error_filter, Timer
 
 class Board():
 
@@ -145,6 +145,9 @@ class Board():
             for name in self.players.keys():
                 move = self.get_next_move(name)
                 self.moves[name].append(move)
+                
+            for name in self.players.keys():
+                move = self.moves[name][-1]
                 if move == None: continue
 
                 # update army
@@ -201,6 +204,12 @@ class Board():
         move = self.players[player_name].get_next_move(board)
         while not self.is_valid(move, player_name):
             move = self.players[player_name].get_next_move(board)
+
+        if self.human:
+            clear()
+            dummy = input()
+            clear()
+
         return move
 
     def is_valid(self, move, player_name):
@@ -213,6 +222,7 @@ class Board():
 
         if move == None: return True
         ((x0, y0), (x1, y1), is_half) = move
+        if not abs(x0 - x1) + abs(y0 - y1) == 1: return False
         if not ((x0 in range(self.width)) and (x1 in range(self.width)) and 
                 (y0 in range(self.height)) and (y1 in range(self.height))): return False
         if (x1, y1) in self.mountains: return False
@@ -297,8 +307,8 @@ class Tile():
             use vis.py for visualization;
             use 'print(T.__dict__)' to check details
         '''
-        if self.is_general == 1: return 'G{}'.format(str(self.army).zfill(2))
-        if self.is_city == 1: return 'C{}'.format(str(self.army).zfill(2))
+        if self.is_general == 1: return 'G{}'.format(str(self.army % 100).zfill(2))
+        if self.is_city == 1: return 'C{}'.format(str(self.army % 100).zfill(2))
         if self.is_mountain == 1: return 'MMM'
         if self.is_city == 0.5: return '_U_'
         return str(self.army).zfill(3)
