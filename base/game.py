@@ -242,7 +242,7 @@ class Board():
 
         for (x, y) in self.lands[player_name_loser]:
             self.board[x][y].owner = player_name_winner
-        (x0, y0) = self.generals[player_name_loser].pop()
+        (x0, y0) = self.generals[player_name_loser]
         self.cities.add((x0, y0))
         self.board[x0][y0].is_general = 0
         self.board[x0][y0].is_city = 0
@@ -250,6 +250,7 @@ class Board():
             self.vis[player_name_winner].union(self.vis[player_name_loser])
         self.lands[player_name_winner] = \
             self.lands[player_name_winner].union(self.lands[player_name_loser])
+        self.players.pop(player_name_loser)
 
     def add_army(self):
 
