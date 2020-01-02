@@ -188,7 +188,7 @@ def cli(resume=''):
             pprint(B.info())
             exit(1)
             
-    print(B.winner)
+    print('Winner:', B.winner)
 
 
 if __name__ == '__main__':
