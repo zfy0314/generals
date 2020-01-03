@@ -1,43 +1,51 @@
 import datetime
 import fire
 import importlib
-import json
 import os
 from pprint import pprint
 import time
+import yaml
 
 from base.game import Board
 
-def main(config_file='configs/test101.json'):
+def main(config_file='configs/humans_2.yaml'):
     
     with open(config_file, 'r') as fin:
-        config = json.load(fin)
+        config = yaml.load(fin.read(), Loader=yaml.SafeLoader)
 
     if 'view' not in config.keys():
         view = False
     else:
         view = True
         viewer = importlib.import_module(config['view'])
-    if 'save' in config.keys():
-        with open(config['save'], 'w') as fin:
-            pass
-    players = {name: importlib.import_module(config['players'][name].Player) 
-                   for name in config['players'].keys()}
-    B = Board(config_file,
-              player,
-              config['width'],
-              config['height'],
-              config['mountain_ratio'],
-              config['city_ratio'])
 
-    while B.update():
-        if view:
-            viewer(B)
-        else:
-            pprint(B.status)
-        if 'save' in config.keys():
-            B.save(config['save'])
-    print(B.winner)
+        # TODO
+        # add viewer implementation
+
+    if 'resume' in config.keys():
+        B = yaml.load(open(config['resume'], 'r'), Loader=yaml.SafeLoader)
+        B.get_players()
+    else: 
+        B = Board(config_file,
+                config['players'], 
+                config['width'],
+                config['height'],
+                config['mountain_ratio'],
+                config['city_ratio'])
+        if 'human' in config.keys():
+            B.human = True
+
+    while True:
+        try:
+            status = B.update()
+            if status == False:
+                break
+        except KeyboardInterrupt:
+            pprint(B.info())
+            if 'save' in config.keys():
+                B.save(config['save'])
+            exit(1)
+    print('Winner:', B.winner)
 
 if __name__ == '__main__':
     fire.Fire(main)

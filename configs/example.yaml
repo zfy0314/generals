@@ -1,0 +1,9 @@
+city_ratio: 0.05
+height: 20
+mountain_ratio: 0.35
+players:
+  dummy1: players.player_example.player
+  dummy2: players.player_example.player
+width: 20
+save: replays/latest.yaml
+resume: replays/sample.yaml

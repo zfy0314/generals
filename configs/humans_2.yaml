@@ -1,0 +1,9 @@
+city_ratio: 0.1
+height: 15
+mountain_ratio: 0.3
+players:
+  player1: players.player_human.player
+  player2: players.player_human.player
+width: 15
+human: True
+resume: replays/latest.yaml

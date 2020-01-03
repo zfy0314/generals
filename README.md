@@ -7,8 +7,11 @@ V0.0.0 release:
 
 How to play:
 -----
-1. set map as prompted (default set to 2 players; 15*15; mountain ratio 0.3; city ratio 0.1)
-2. type x y w/a/s/d/w1/a1/s1/d1 to control the army
+1. `git clone https://github.com/zfy0314/generals.git`
+2. `cd generals`
+3. create customized configure file in `configs/`, default provided as `configs/humans_2.yaml`
+3. `python3 play.py --config_file={YOUR_CONFIG_FILE}`
+4. type x y w/a/s/d/w1/a1/s1/d1 to control the army
     * x, y: initial coordinates
     * *1: move half of the army
     * add 'Q' to the front to quit all queued moves
@@ -51,9 +54,15 @@ Directory Tree
 |
 |--configs/ # different playing settings
 | |
-| |--{INDENTIFIER}.json
+| |--{INDENTIFIER}.yaml
 |
-|--offline.py # v0.0.0 offline cli generals
+|--replays/ # save playing results, can be resumed
+| |
+| |--sample.yaml # sample half-played replay
+| |
+| |--{OTHER}.yaml
+|
+|--offline.py # v0.0.0 offline cli generals; merged into play.py; will be removed soon
 |
 |--play.py # main entrance, flag pointed to config file
 |
@@ -77,10 +86,3 @@ Dos and Don'ts
 ***DO NOTs***
 1. merge to master branch
 2. edit other players
-
-Target
------
-* v0.0.0: offline cli generals for up to 8 players
-* v0.1.0: visualization and interation
-* ...
-* v1.0.0: player implementation

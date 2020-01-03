@@ -1,8 +1,9 @@
 from copy import deepcopy
-import json
+import importlib
 from random import randint, random, shuffle
 import os
 from pprint import pprint
+import yaml
 
 from base.utils import clear, cprint, error_filter, Timer
 
@@ -14,7 +15,7 @@ class Board():
         '''
         Args:
             name: (string) identifier of the board
-            players: (dict: {name: player_class}) different players, 
+            players: (dict: {name: path.to.player_class}) different players, 
                 every player must have "get_next_move" callable
             mountain_ratio: (double) NUM_MOUNTAIN / NUM_TILES
             city_ratio: (double) NUM_CITY / NUM_TILES
@@ -29,7 +30,8 @@ class Board():
             vis: (dict: {name: {(x, y)}}) visable coordinates for different players
         '''
         self.name = name
-        self.players = players
+        self.players_classes = players
+        self.get_players()
         self.width = width
         self.height = height
         self.size = width * height
@@ -52,7 +54,13 @@ class Board():
         '''
         return deepcopy(self.board[index[0]][index[1]])
 
+    def get_players(self):
+
+        self.players = {key: importlib.import_module(self.players_classes[key]).Player(name=key) \
+                            for key in self.players_classes.keys()}
+
     def get_surrounded(self, x0, y0):
+
         potentials = []
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
@@ -189,6 +197,7 @@ class Board():
 
         if len(self.players) == 1:
             self.winner = self.players.keys() 
+            self.view()
             return False # game terminated
         else:
             return True
@@ -275,18 +284,23 @@ class Board():
 
     def info(self):
 
-        info = self.__dict__
-        info['board'] = 'Tiles {} x {}'.format(self.width, self.height)
+        info = deepcopy(self.__dict__)
+        info.pop('board')
+        info.pop('players')
         return info
 
     def save(self, output_file):
 
-        with open(output_file, 'a+') as fout:
-            pass
-
-            # TODO
-            # save self.board for later review @ljt
+        # with open(output_file, 'a+') as fout:
+        #     pass
+        #
+        #     # TODO
+        #     # save self.board for later review @ljt
     
+        with open(output_file, 'w') as fout:
+            data = deepcopy(self)
+            data.__dict__.pop('players')
+            fout.write(yaml.dump(data))
         return os.path.getsize(output_file)
 
 class Tile():
