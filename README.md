@@ -3,15 +3,18 @@
 V0.0.0 release:
 -----
 ![demo](screenshot.png)
-* **Main Feature**: offline cli generals for up to 8 players
+* **Main Features**: 
+    * offline cli generals for up to 8 players
+    * save & resume
 
 How to play:
 -----
 1. `git clone https://github.com/zfy0314/generals.git`
 2. `cd generals`
-3. create customized configure file in `configs/`, default provided as `configs/humans_2.yaml`
-3. `python3 play.py --config_file={YOUR_CONFIG_FILE}`
-4. type x y w/a/s/d/w1/a1/s1/d1 to control the army
+3. `pip3 install -r requirements.txt --user`
+4. create customized configure file in `configs/`, default provided as `configs/humans_2.yaml`
+5. `python3 play.py --config_file={YOUR_CONFIG_FILE}`
+6. type x y w/a/s/d/w1/a1/s1/d1 to control the army
     * x, y: initial coordinates
     * *1: move half of the army
     * add 'Q' to the front to quit all queued moves
@@ -44,6 +47,12 @@ Directory Tree
 | | |
 | | |--{OTHER_IMPLEMENTATION_CODES}
 | |
+| |--player_human/ # a wrapper for humans
+| | |
+| | |--__init__.py
+| | | 
+| | |--player.py
+| |
 | |--player_{OTHER}/
 |
 |--models/ # large models should be place here
@@ -69,6 +78,8 @@ Directory Tree
 |--requirements.txt # tracks python packages
 |
 |--README.md
+|
+|--review.py # reivew saved .yaml; to be done
 |
 |--test.py # a wrapper to test each module
 ```

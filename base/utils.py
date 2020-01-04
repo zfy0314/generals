@@ -61,6 +61,9 @@ class Cprinter():
 
 cprint = Cprinter()
 
+class ErrorFilterMaxTry(Exception):
+    pass
+
 def error_filter(func, *args, **kwargs):
 
     '''
@@ -89,7 +92,7 @@ def error_filter(func, *args, **kwargs):
         if 'max_try' in kwargs.keys() and cnt > kwargs['max_try']:
             print('error_filter: func {} reached {} tries !!!'.format(
                 str(func), cnt))
-            raise KeyboardInterrupt
+            raise ErrorFilterMaxTry
 
 def clear():
 

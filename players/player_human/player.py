@@ -58,6 +58,7 @@ class Player():
             self.queue = [None]
         cprint('{}'.format(self.name), id=self.name, end='')
         tmp = input("'s turn: (queued: {})\n".format(self.queue[0]))
+        if tmp == 'quit': return 'quit'
         if 'q' in tmp or 'Q' in tmp: 
             self.queue = []
             tmp = tmp.replace('q', '').replace('Q', '')

@@ -5,7 +5,7 @@ import os
 from pprint import pprint
 import yaml
 
-from base.utils import clear, cprint, error_filter, Timer
+from base.utils import clear, cprint, error_filter, ErrorFilterMaxTry, Timer
 
 class Board():
 
@@ -150,9 +150,24 @@ class Board():
                 pass
             self.moves = {name: [] for name in self.players.keys()}
         else:
+            dying = set()
             for name in self.players.keys():
-                move = self.get_next_move(name)
-                self.moves[name].append(move)
+                try:
+                    move = error_filter(self.get_next_move, name, max_try=127)
+                except KeyboardInterrupt:
+                    raise KeyboardInterrupt
+                except ErrorFilterMaxTry:
+                    # player got stuck in invalid moves 
+                    dying.add(name)
+                else:
+                    if not move == 'quit':
+                        self.moves[name].append(move)
+                    else:
+                        # player surrender
+                        dying.add(name)
+            
+            for name in dying:
+                self.clear_player(name)
                 
             for name in self.players.keys():
                 move = self.moves[name][-1]
@@ -184,7 +199,7 @@ class Board():
 
         # liveness inspection
         for name, (x, y) in self.generals.items():
-            if self.board[x][y].owner != name:
+            if (self.board[x][y].owner != name) and (name in self.players.keys()):
                 self.merge_players(self.board[x][y].owner, name)
 
         # alternative implementation available
@@ -196,7 +211,7 @@ class Board():
             self.status[name]['land'] = len(self.lands[name])
 
         if len(self.players) == 1:
-            self.winner = self.players.keys() 
+            self.winner = {key: self.players_classes[key] for key in self.players}
             self.view()
             return False # game terminated
         else:
@@ -210,9 +225,7 @@ class Board():
             print('\n')
 
         board = self.get_board(player_name)
-        move = self.players[player_name].get_next_move(board)
-        while not self.is_valid(move, player_name):
-            move = self.players[player_name].get_next_move(board)
+        move = self.valid_filter(self.players[player_name].get_next_move(board), player_name)
 
         if self.human:
             clear()
@@ -221,23 +234,25 @@ class Board():
 
         return move
 
-    def is_valid(self, move, player_name):
+    def valid_filter(self, move, player_name):
 
         '''
         Args:
-            move: (tuple or None) ((x0, y0), (x1, y1), is_half)
+            move: (tuple or None or 'quit') ((x0, y0), (x1, y1), is_half)
                   move from (x0, y0) to (x1, y1), is_half in [True, False]
+                  'quit' for surrender
         '''
 
-        if move == None: return True
+        if move == None: return None
+        if move == 'quit': return 'quit'
         ((x0, y0), (x1, y1), is_half) = move
-        if not abs(x0 - x1) + abs(y0 - y1) == 1: return False
-        if not ((x0 in range(self.width)) and (x1 in range(self.width)) and 
-                (y0 in range(self.height)) and (y1 in range(self.height))): return False
-        if (x1, y1) in self.mountains: return False
-        if not self.board[x0][y0].owner == player_name: return False
-        if not self.board[x0][y0].army > 1: return False
-        return True
+        assert abs(x0 - x1) + abs(y0 - y1) == 1
+        assert ((x0 in range(self.width)) and (x1 in range(self.width)) and \
+                (y0 in range(self.height)) and (y1 in range(self.height)))
+        assert (x1, y1) not in self.mountains
+        assert self.board[x0][y0].owner == player_name
+        assert self.board[x0][y0].army > 1
+        return move
 
     def get_board(self, player_name):
 
@@ -259,7 +274,23 @@ class Board():
             self.vis[player_name_winner].union(self.vis[player_name_loser])
         self.lands[player_name_winner] = \
             self.lands[player_name_winner].union(self.lands[player_name_loser])
-        self.players.pop(player_name_loser)
+        self.pop_player(player_name_loser)
+
+    def clear_player(self, player_name):
+
+        (x, y) = self.generals[player_name]
+        self.cities.add((x, y))
+        self.board[x][y].is_general = 0
+        self.board[x][y].is_city = 1
+        for (x, y) in self.lands[player_name]:
+            self.board[x][y].owner = None
+        self.pop_player(player_name)
+
+    def pop_player(self, player_name):
+        
+        self.lands.pop(player_name)
+        self.players.pop(player_name)
+        self.status.pop(player_name)
 
     def add_army(self):
 

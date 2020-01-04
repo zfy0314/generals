@@ -46,6 +46,8 @@ def main(config_file='configs/humans_2.yaml'):
                 B.save(config['save'])
             exit(1)
     print('Winner:', B.winner)
+    if 'save' in config.keys():
+        B.save(config['save'])
 
 if __name__ == '__main__':
     fire.Fire(main)
